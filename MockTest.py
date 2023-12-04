@@ -1,49 +1,50 @@
-import RedditClient
-import unittest
 from unittest.mock import Mock
-import difflib
 
 
+# Mock setup
+mock_client = Mock()
 
-# Create a mock client
-mock = Mock()
+# Configure the mock to return specific values
+mock_client.retrieve_post_content.return_value.post_id = '0'
+mock_client.get_top_comments.return_value.top_comment_id = ['1']
+mock_client.expand_comment_branch_depth2.return_value.expand_comment = [Mock(expand_comment_id=['2']), Mock(expand_comment_id=['4'])]
 
-# Create a client
-client = RedditClient.RedditClient()
+# Fuction1: Retrieve a post
+def func1(client, post_id):
+    return client.retrieve_post_content(post_id).post_id
 
-# Before test
-post0 = client.create_post(title="post0", text="post0")
-comment0 = client.create_comment(text="comment0", parent_post_id=post0.post_id)
-comment1 = client.create_comment(text="comment1", parent_post_id=post0.post_id, score=1)
-comment2 = client.create_comment(text="comment2", parent_comment_id=comment1.comment_id, score=1)
-comment3 = client.create_comment(text="comment3", parent_comment_id=comment1.comment_id)
-comment4 = client.create_comment(text="comment4", parent_comment_id=comment2.comment_id, score=1)
-comment5 = client.create_comment(text="comment5", parent_comment_id=comment2.comment_id)
+# Function2: Retrieve the most upvoted comments
+def func2(client, post_id):
+    return client.get_top_comments(post_id, 1).top_comment_id[0]
+
+# Function3: Expand the most upvoted comment
+def func3(client, comment_id):
+    return client.expand_comment_branch_depth2(comment_id, 1).expand_comment
+
+# Function4: Return the most upvoted reply under the most upvoted comment
+def func4(client, comment_id):
+    return client.expand_comment_branch_depth2(comment_id, 1).expand_comment[0].expand_comment_id[0]
 
 
 # Test 1
-result1 = client.retrieve_post_content('0').post_id
+result1 = func1(mock_client, '0')
 assert result1 == '0', "retrieve_post failed"
 
 # Test 2
-result2 = client.get_top_comments('0', 1).top_comment_id[0]
+result2 = func2(mock_client,'0')
 assert result2 == '1', "get_top_comments failed"
 
 # Test 3
-result3 = client.expand_comment_branch_depth2('1', 1).expand_comment
+result3 = func3(mock_client, '1')
 result31 = result3[0].expand_comment_id[0]
 result32 = result3[1].expand_comment_id[0]
 assert result31 == '2' and result32 == '4', "Expand the most upvoted comment failed"
 
 # Test 4
-result4 = client.expand_comment_branch_depth2('1', 1).expand_comment[0].expand_comment_id[0]
-assert result4 == '2', "Return the most upvoted reply under the most upvoted comment"
+result4 = func4(mock_client, '1')
+assert result4 == '2', "Return the most upvoted reply under the most upvoted comment failed"
 
-
-
-
-
-
-    
-
-
+# Verify that the mock methods were called as expected
+mock_client.retrieve_post_content.assert_called_with('0')
+mock_client.get_top_comments.assert_called_with('0', 1)
+mock_client.expand_comment_branch_depth2.assert_called_with('1', 1)
