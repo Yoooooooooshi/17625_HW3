@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+// User information
+message User {
+  string user_id = 1; 
+}
+
+// Post information
+message Post {
+  string post_id = 1;
+  string title = 2; 
+  string text = 3; 
+  oneof multimedia {
+    string video_url = 4;
+    string image_url = 5;
+  }
+  enum State {
+    NORMAL = 0;
+    LOCKED = 1;
+    HIDDEN = 2;
+  }
+  State state = 6; 
+  int32 score = 7; 
+  string publication_date = 8;
+  User author = 9;
+  repeated string post_replies = 10;
+}
+
+// Comment information
+message Comment {
+  string comment_id = 1;
+  string text = 2; 
+  int32 score = 3;
+  string publication_date = 4;
+  User author = 5;
+  enum State {
+    NORMAL = 0;
+    HIDDEN = 1;
+  }
+  State state = 6;
+  oneof parent {
+    string parent_post_id = 7;
+    string parent_comment_id = 8;
+  }
+  repeated string comment_replies = 9;
+}
+
+
+// API endpoints for actions related to posts and comments
+service ParallelReddit {
+  // Create a post
+  // Request is a post
+  // Response is the created post
+  rpc CreatePost(Post) returns (Post);
+  // Upvote a post
+  // Request is a post id 
+  // Response is the upvoted post
+  rpc UpvotePost(UpvotePostRequest) returns (Post);
+  // Downvote a post
+  // Request is a post id 
+  // Response is the downvoted post
+  rpc DownvotePost(DownvotePostRequest) returns (Post);
+  // Retrieve a post
+  // Reqeust is a post id
+  // Response is the post
+  rpc RetrievePostContent(RetrievePostContentRequest) returns (Post);
+  // Create a Comment
+  // Request is a Comment
+  // Response is the created comment
+  rpc CreateComment(Comment) returns (Comment);
+  // Upvote a comment
+  // Request is a comment id 
+  // Response is the upvoted comment
+  rpc UpvoteComment(UpvoteCommentRequest) returns (Comment);
+  // Downvote a comment
+  // Request is a comment id 
+  // Response is the downvoted comment
+  rpc DownvoteComment(DownvoteCommentRequest) returns (Comment);
+  // Retrieving a list of N most upvoted comments under a post
+  // Reqeust is the post id and N
+  // Response is a list of comment id
+  rpc GetTopComments(GetTopCommentsRequest) returns (GetTopCommentsResponse);
+  // Expand a comment branch. 
+  // This allows to open most N most upvoted comments under a given comment, 
+  // alongside with N most upvoted comments under those comments.
+  // Request is the comment id and N
+  // Response is a list of list of comment id
+  rpc ExpandCommentBranchDepth2(ExpandCommentBranchDepth2Request) returns (ExpandCommentBranchResponse);
+}
+
+message UpvotePostRequest {
+    string upvote_post = 1;
+}
+
+message DownvotePostRequest {
+    string downvote_post = 1;
+}
+
+message RetrievePostContentRequest {
+    string retrieve_post = 1;
+}
+
+message UpvoteCommentRequest {
+    string upvote_comment = 1;
+}
+
+message DownvoteCommentRequest {
+    string downvote_comment = 1;
+}
+
+message RetrieveCommentsRequest {
+    string retrieve_comment = 1;
+}
+
+message GetTopCommentsRequest {
+  string post_branch = 1;
+  int32 N = 2;
+}
+
+message ExpandCommentBranchDepth2Request {
+    string comment_branch = 1;
+    int32 N = 2;
+}
+
+message GetTopCommentsResponse {
+    repeated string top_comment_id = 1;
+    repeated bool replied = 2;
+}
+
+message IDList {
+    repeated string expand_comment_id = 1;
+}
+
+message ExpandCommentBranchResponse {
+    repeated IDList expand_comment = 1;
+}
