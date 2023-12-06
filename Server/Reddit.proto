@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+// User information
+message User {
+  // Identifier of a user
+  string user_id = 1; 
+}
+
+// Post information
+message Post {
+  // Identifier of a post
+  string post_id = 1;
+  // title of a post
+  string title = 2; 
+  // content of a post
+  string text = 3; 
+  // multimedia content of a post
+  // each post can only have one of below
+  oneof multimedia {
+    string video_url = 4;
+    string image_url = 5;
+  }
+  // state of a post
+  enum State {
+    NORMAL = 0;
+    LOCKED = 1;
+    HIDDEN = 2;
+  }
+  State state = 6; 
+  // score of a post
+  int32 score = 7; 
+  // publication date of a post
+  string publication_date = 8;
+  // User of the post
+  User author = 9;
+  // a post can have several comment replies
+  // Only the id of the comments are stored here to avoid messy in display
+  repeated string post_replies = 10;
+}
+
+// Comment information
+message Comment {
+  // Identifier of a comment
+  string comment_id = 1;
+  // Text content of a comment
+  string text = 2; 
+  // score of a comment
+  int32 score = 3;
+  // Publication data of a comment
+  string publication_date = 4;
+  // Author of a comment
+  User author = 5;
+  // State of a comment
+  enum State {
+    NORMAL = 0;
+    HIDDEN = 1;
+  }
+  State state = 6;
+  // parent id of a comment
+  // a comment can only have one of below
+  oneof parent {
+    string parent_post_id = 7;
+    string parent_comment_id = 8;
+  }
+  // replies of this comment
+  // their ids are stored here
+  // Only the id of the comments are stored here to avoid messy in display
+  repeated string comment_replies = 9;
+}
+
+
+// API endpoints for actions related to posts and comments
+service ParallelReddit {
+  // Create a post
+  // Request is a post
+  // Response is the created post
+  rpc CreatePost(Post) returns (Post);
+  // Upvote a post
+  // Request is a post id, since id can perfectly identify a post
+  // Response is the upvoted post
+  rpc UpvotePost(UpvotePostRequest) returns (Post);
+  // Downvote a post
+  // Request is a post id, since id can perfectly identify a post
+  // Response is the downvoted post
+  rpc DownvotePost(DownvotePostRequest) returns (Post);
+  // Retrieve a post
+  // Reqeust is a post id, since id can perfectly identify a post
+  // Response is the post
+  rpc RetrievePostContent(RetrievePostContentRequest) returns (Post);
+  // Create a Comment
+  // Request is a Comment
+  // Response is the created comment
+  rpc CreateComment(Comment) returns (Comment);
+  // Upvote a comment
+  // Request is a comment id, since id can perfectly identify a comment
+  // Response is the upvoted comment
+  rpc UpvoteComment(UpvoteCommentRequest) returns (Comment);
+  // Downvote a comment
+  // Request is a comment id, since id can perfectly identify a comment
+  // Response is the downvoted comment
+  rpc DownvoteComment(DownvoteCommentRequest) returns (Comment);
+  // Retrieving a list of N most upvoted comments under a post
+  // Reqeust is the post id and N,
+  // Response is a list of comment id,
+  // only id is returned since id can perfectly identify a comment
+  // return the whole comments can make the response messy
+  rpc GetTopComments(GetTopCommentsRequest) returns (GetTopCommentsResponse);
+  // Expand a comment branch. 
+  // This allows to open most N most upvoted comments under a given comment, 
+  // alongside with N most upvoted comments under those comments.
+  // Request is the comment id and N
+  // Response is a list of list of comment id
+  // only id is returned since id can perfectly identify a comment
+  // return the whole comments can make the response messy
+  rpc ExpandCommentBranchDepth2(ExpandCommentBranchDepth2Request) returns (ExpandCommentBranchResponse);
+}
+
+message UpvotePostRequest {
+    string upvote_post = 1;
+}
+
+message DownvotePostRequest {
+    string downvote_post = 1;
+}
+
+message RetrievePostContentRequest {
+    string retrieve_post = 1;
+}
+
+message UpvoteCommentRequest {
+    string upvote_comment = 1;
+}
+
+message DownvoteCommentRequest {
+    string downvote_comment = 1;
+}
+
+message RetrieveCommentsRequest {
+    string retrieve_comment = 1;
+}
+
+message GetTopCommentsRequest {
+  string post_branch = 1;
+  int32 N = 2;
+}
+
+message ExpandCommentBranchDepth2Request {
+    string comment_branch = 1;
+    int32 N = 2;
+}
+
+message GetTopCommentsResponse {
+    repeated string top_comment_id = 1;
+    repeated bool replied = 2;
+}
+
+// This is for ExpandCommentBranchResponse
+// In order to return a depth-2 tree
+message IDList {
+    repeated string expand_comment_id = 1;
+}
+
+message ExpandCommentBranchResponse {
+    repeated IDList expand_comment = 1;
+}
